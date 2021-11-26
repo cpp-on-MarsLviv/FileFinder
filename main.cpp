@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
     MainWindow mainWindow;
 
     Utils::AppLocation::calculateAppGeometry();
-    mainWindow.move(Utils::AppLocation::appMoveOnX, Utils::AppLocation::appMoveOnY);       // move App to screen center
+    mainWindow.move(Utils::AppLocation::appMoveOnX, Utils::AppLocation::appMoveOnY);
     mainWindow.setMinimumWidth(Utils::AppLocation::appMinWidth);
     mainWindow.setMinimumHeight(Utils::AppLocation::appMinHeight);
 

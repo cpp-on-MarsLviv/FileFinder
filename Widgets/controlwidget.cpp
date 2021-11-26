@@ -14,22 +14,18 @@
 #include <QStringList>
 #include <QDirIterator>
 
-#include <QtConcurrent/QtConcurrent>
-
 ControlWidget::ControlWidget(QWidget *parent) :
     QWidget{parent},
     mainLayout {new QVBoxLayout(this)},
     fileNameLayout {new QHBoxLayout(this)},
-    //catalogName {new QLabel(Helpers::catalogLabel, this)},
-    //filesToFind {new QTextEdit(this)},
     catalogName {new QLineEdit(Helpers::catalogLabel, this)},
-    patternToFind {new QLineEdit(this)},
+    patternToFind {new QLineEdit(Helpers::defaultSearchPuttern, this)},
     controlButton {new QPushButton(Helpers::buttonLabelToStart, this)},
+    cancelButton {new QPushButton(Helpers::buttonLabelToCancel, this)},
     filesView {new QListView(this)},
     listModel {new QStringListModel(this)},
     saveButton {new QPushButton(Helpers::saveButtonLabel, this)}
 {
-
     catalogName->setReadOnly(true);
     mainLayout->addWidget(catalogName);
 
@@ -38,19 +34,22 @@ ControlWidget::ControlWidget(QWidget *parent) :
 
     fileNameLayout->addWidget(patternToFind);
     fileNameLayout->addWidget(controlButton);
+    fileNameLayout->addWidget(cancelButton);
+    fileNameLayout->setSpacing(15);
     mainLayout->addLayout(fileNameLayout);
 
-
-    //filesToShow << "Clair de Lune" << "Reverie" << "Prelude";
     filesToShow << Helpers::defaultInfoInSearchResult;
     listModel->setStringList(filesToShow);
-    filesView->setEditTriggers(QAbstractItemView::NoEditTriggers);// TODO: ?
+    filesView->setEditTriggers(QAbstractItemView::NoEditTriggers);
     filesView->setModel(listModel);
 
     mainLayout->addWidget(filesView);
-    mainLayout->addWidget(saveButton);
+    saveButton->setMinimumWidth(Helpers::saveButtonMinWidth);
+    mainLayout->addWidget(saveButton, 1, Qt::AlignHCenter);
+
     connect(saveButton, &QPushButton::clicked, this, &ControlWidget::onSaveButton);
     connect(controlButton, &QPushButton::clicked, this, &ControlWidget::onStartButton);
+    connect(cancelButton, &QPushButton::clicked, this, &ControlWidget::onCancelButton);
 }
 
 void ControlWidget::onDirectoryChanged(const QString newCatalog)
@@ -64,58 +63,23 @@ void ControlWidget::onStartButton(bool /*checked*/)
     qDebug() << "onStartButton()";
     disableControls();
 
-    // clear model
+    // clean model
     auto rowCountClean = listModel->rowCount();
     if (rowCountClean > 1) {
         listModel->removeRows(1, rowCountClean - 1);
     }
 
     // set async task to search
-    auto initialPath = catalogName->text();
-    auto indexOfRoot = catalogName->text().indexOf(QDir::separator());
-    auto clearPath= initialPath.mid(indexOfRoot, initialPath.size() - 1);
+    connect(&watcherForConcurrentSearching, &QFutureWatcher<QStringList>::finished, this, &ControlWidget::handleFinishedSearchingTask);
+    connect(&watcherForConcurrentSearching, &QFutureWatcher<QStringList>::canceled, this, &ControlWidget::handleCanceledSearchingTask);
 
-    QFuture<QStringList> future = QtConcurrent::run(QtBasedEngine::getFiles, clearPath, patternToFind->text());
-    future.waitForFinished();
-    auto files = future.result();
-    //qDebug() << files;
+    futureForConcurrentSearching = QtConcurrent::run(QtBasedEngine::getFiles, currentCatalog, patternToFind->text());
+    watcherForConcurrentSearching.setFuture(futureForConcurrentSearching);
+}
 
-    //filesToShow = files;
-    //filesToShow << "Clair de Lune" << "Reverie" << "Prelude";
-    qDebug() << filesToShow;
-
-//    auto rowCount = listModel->rowCount();          qDebug() << "rowCount" << rowCount;
-//    QModelIndex modelIndex = listModel->index(rowCount - 1);  qDebug() << "modelIndex" << modelIndex;
-//    //listModel->insertRows(rowCount, 1);
-//    listModel->insertRow(rowCount);// insert row before index
-//    listModel->setData(modelIndex, "99", Qt::DisplayRole);
-
-//    filesView->setCurrentIndex(modelIndex);
-
-    if (files.size() == 0) {
-        auto rowCount = listModel->rowCount();          qDebug() << "rowCount" << rowCount;
-        QModelIndex modelIndex = listModel->index(rowCount - 1);  qDebug() << "modelIndex" << modelIndex;
-        listModel->insertRow(rowCount);// insert row before index
-        listModel->setData(modelIndex, Helpers::defaultInfoInSearchResult, Qt::DisplayRole);
-
-        filesView->setCurrentIndex(modelIndex);
-    }
-
-    auto rowCount = listModel->rowCount();          qDebug() << "rowCount" << rowCount;
-    for(int i = 0; i < files.size(); ++i) {
-        QModelIndex modelIndex = listModel->index(rowCount - 1);  qDebug() << "modelIndex" << modelIndex;
-        //listModel->insertRows(rowCount, 1);
-        listModel->insertRow(rowCount);// insert row before index
-        listModel->setData(modelIndex, files[i], Qt::DisplayRole);
-
-        filesView->setCurrentIndex(modelIndex);
-        ++rowCount;
-    }
-
-    //emit listModel->dataChanged(modelIndex, modelIndex, {Qt::DisplayRole});
-
-
-    enableControls();
+void ControlWidget::onCancelButton(bool /*checked*/)
+{
+    // TODO: implement method
 }
 
 void ControlWidget::onSaveButton(bool /*checked*/)
@@ -129,15 +93,56 @@ void ControlWidget::onSaveButton(bool /*checked*/)
     else {
         QFile file(fileName);
         if (!file.open(QIODevice::WriteOnly)) {
-            QMessageBox::information(this, tr("Unable to open file"),
+            QMessageBox::information(this, "Unable to open file",
             file.errorString());
             return;
         }
-        QDataStream out(&file);
-        out.setVersion(QDataStream::Qt_6_2);
-        std::for_each(filesToShow.cbegin(), filesToShow.cend(), [&out](const QString string){out << string;});// TODO: fix bug
-        //out << list;
+        QTextStream out(&file);
+        std::for_each(filesToShow.cbegin(), filesToShow.cend(), [&out](const QString string){
+
+            out << string.toUtf8();
+            out << "\n";
+        });
     }
+}
+
+void ControlWidget::handleFinishedSearchingTask()
+{
+    qDebug() << "handleFinishedSearchingTask()";
+    if (!futureForConcurrentSearching.isValid()) {
+        qDebug() << "future not valid";
+        return;
+    }
+    auto files = futureForConcurrentSearching.takeResult();
+
+    filesToShow = files;
+
+    if (files.size() == 0) {
+        auto rowCount = listModel->rowCount();
+        QModelIndex modelIndex = listModel->index(rowCount - 1);
+        listModel->insertRow(rowCount);
+        listModel->setData(modelIndex, Helpers::defaultInfoInSearchResult, Qt::DisplayRole);
+
+        filesView->setCurrentIndex(modelIndex);
+    }
+
+    auto rowCount = listModel->rowCount();
+    for(int i = 0; i < files.size(); ++i) {
+        QModelIndex modelIndex = listModel->index(rowCount - 1);
+        listModel->insertRow(rowCount);                             // TODO: optimize, like listModel->insertRows(rowCount, 1);
+        listModel->setData(modelIndex, files[i], Qt::DisplayRole);  // or using sliding window
+
+        filesView->setCurrentIndex(modelIndex);
+        ++rowCount;
+    }
+
+    enableControls();
+}
+
+void ControlWidget::handleCanceledSearchingTask()
+{
+    // TODO: implement method
+    enableControls();
 }
 
 

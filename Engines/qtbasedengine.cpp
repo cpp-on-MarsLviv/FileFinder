@@ -29,6 +29,5 @@ bool QtBasedEngine::passPattern(const QString pattern, const QString file)
 {
     QRegExp rx(pattern);
     rx.setPatternSyntax(QRegExp::Wildcard);
-    qDebug() << "pattern:" << pattern << "  file:" << file << "  maching:" << rx.exactMatch(file);
     return rx.exactMatch(file);
 }

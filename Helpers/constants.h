@@ -22,11 +22,13 @@ const QString emptyRootPathWin = "C:/";
 
 const QString catalogLabel = "Current catalog: ";
 const QString buttonLabelToStart = "START";
-const QString buttonLabelToStop = "STOP";
+const QString buttonLabelToCancel = "CANCEL";
 const QString placeholderFiles = "*.*";
+const QString defaultSearchPuttern = "*.*";
 const QString toolTipForPattern = "use ? for one character\n* for multiple characters";
 
 const QString saveButtonLabel = "Save...";
+const int saveButtonMinWidth = 300;
 
 const QString defaultInfoInSearchResult = "No files";
 

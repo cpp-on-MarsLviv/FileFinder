@@ -2,6 +2,7 @@
 #define CONTROLWIDGET_H
 
 #include <QWidget>
+#include <QtConcurrent/QtConcurrent>
 
 class QVBoxLayout;
 class QHBoxLayout;
@@ -20,10 +21,9 @@ class ControlWidget : public QWidget
     QHBoxLayout *fileNameLayout {nullptr};
 
     QLineEdit *catalogName  {nullptr};
-    //QLabel *catalogName  {nullptr};
-    //QTextEdit *filesToFind {nullptr};
     QLineEdit *patternToFind  {nullptr};
     QPushButton *controlButton  {nullptr};
+    QPushButton *cancelButton  {nullptr};
 
     QListView *filesView {nullptr};
     QStringListModel *listModel {nullptr};
@@ -33,17 +33,21 @@ class ControlWidget : public QWidget
     QString currentCatalog;
     QStringList filesToShow;
 
+    QFutureWatcher<QStringList> watcherForConcurrentSearching;
+    QFuture<QStringList> futureForConcurrentSearching;
+
     void disableControls();
     void enableControls();
+
+    void onStartButton(bool checked);
+    void onCancelButton(bool checked);
+    void onSaveButton(bool checked);
+    void handleFinishedSearchingTask();
+    void handleCanceledSearchingTask();
 public:
     explicit ControlWidget(QWidget *parent = nullptr);
 
     void onDirectoryChanged(const QString newDirectory);
-    void onStartButton(bool checked);
-    void onSaveButton(bool checked);
-
-signals:
-
 };
 
 #endif // CONTROLWIDGET_H

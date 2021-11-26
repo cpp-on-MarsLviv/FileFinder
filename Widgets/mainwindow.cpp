@@ -20,11 +20,9 @@ void MainWindow::createUI()
     mainSplitter = new QSplitter(Qt::Horizontal, this);
 
     catalogWidget = new CatalogWidget(this);
-    //catalogWidget1 = new CatalogWidget(this);
     controlWidget = new ControlWidget(this);
 
     mainSplitter->addWidget(catalogWidget);
-    //mainSplitter->addWidget(catalogWidget1);
     mainSplitter->addWidget(controlWidget);
 
     mainSplitter->setStretchFactor(0, Helpers::layoutProportions[0]);

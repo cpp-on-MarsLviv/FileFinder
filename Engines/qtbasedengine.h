@@ -5,7 +5,6 @@
 
 class QString;
 
-
 class QtBasedEngine
 {
 public:

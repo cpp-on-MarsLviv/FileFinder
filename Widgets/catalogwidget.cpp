@@ -10,13 +10,14 @@ CatalogWidget::CatalogWidget(QWidget *parent) :
     QWidget{parent},
     catalogLayout{new QVBoxLayout(this)},
     fileSystemView{new QTreeView{this}},
-    fileSystemModel{new QFileSystemModel(fileSystemView)}
-    //fileSystemModel{new QFileSystemModel(this)}
+    fileSystemModel{new QFileSystemModel(this)}
 {
     #if defined(Q_OS_LINUX)
-    fileSystemModel->setRootPath(Helpers::emptyRootPathLinux);// QDir::currentPath()
+    fileSystemModel->setRootPath(Helpers::emptyRootPathLinux);
     #elif defined(Q_OS_WIN)
     fileSystemModel->setRootPath(Helpers::emptyRootPathWin);
+    #else
+    fileSystemModel->setRootPath(Helpers::emptyRootPathLinux);
     #endif
 
     fileSystemModel->setFilter(QDir::NoDotAndDotDot | QDir::AllDirs | QDir::Drives);
@@ -38,6 +39,5 @@ void CatalogWidget::onFileSystemViewClicked(const QModelIndex &index)
     QString path = fileSystemModel->fileInfo(index).absoluteFilePath();
     qDebug() << "mPath" << path;
     emit directryChanged(path);
-//    fileSystemView->setRootIndex(fileSystemModel->setRootPath(mPath));
 }
 
