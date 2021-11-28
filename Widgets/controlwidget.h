@@ -33,6 +33,7 @@ class ControlWidget : public QWidget
     QString currentCatalog;
     QStringList filesToShow;
 
+    std::atomic_bool toCancel;
     QFutureWatcher<QStringList> watcherForConcurrentSearching;
     QFuture<QStringList> futureForConcurrentSearching;
 

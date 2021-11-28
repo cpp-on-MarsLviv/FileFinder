@@ -10,8 +10,8 @@ class QtBasedEngine
 public:
     QtBasedEngine() = delete;
 
-    static QStringList getFiles(const QString path, const QString pattern);
-    static bool passPattern(const QString pattern, const QString file);
+    static QStringList getFiles(const QString &path, const QString &pattern, std::atomic_bool &toCancel);
+    static bool passPattern(const QString &pattern, const QString &file);
 };
 
 #endif // QTBASEDENGINE_H

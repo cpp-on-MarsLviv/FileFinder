@@ -47,6 +47,8 @@ ControlWidget::ControlWidget(QWidget *parent) :
     saveButton->setMinimumWidth(Helpers::saveButtonMinWidth);
     mainLayout->addWidget(saveButton, 1, Qt::AlignHCenter);
 
+    cancelButton->setDisabled(true);
+
     connect(saveButton, &QPushButton::clicked, this, &ControlWidget::onSaveButton);
     connect(controlButton, &QPushButton::clicked, this, &ControlWidget::onStartButton);
     connect(cancelButton, &QPushButton::clicked, this, &ControlWidget::onCancelButton);
@@ -60,31 +62,28 @@ void ControlWidget::onDirectoryChanged(const QString newCatalog)
 
 void ControlWidget::onStartButton(bool /*checked*/)
 {
-    qDebug() << "onStartButton()";
     disableControls();
+    toCancel.store(false);
 
-    // clean model
     auto rowCountClean = listModel->rowCount();
     if (rowCountClean > 1) {
         listModel->removeRows(1, rowCountClean - 1);
     }
 
-    // set async task to search
     connect(&watcherForConcurrentSearching, &QFutureWatcher<QStringList>::finished, this, &ControlWidget::handleFinishedSearchingTask);
     connect(&watcherForConcurrentSearching, &QFutureWatcher<QStringList>::canceled, this, &ControlWidget::handleCanceledSearchingTask);
 
-    futureForConcurrentSearching = QtConcurrent::run(QtBasedEngine::getFiles, currentCatalog, patternToFind->text());
+    futureForConcurrentSearching = QtConcurrent::run(QtBasedEngine::getFiles, currentCatalog, patternToFind->text(), std::ref(toCancel));
     watcherForConcurrentSearching.setFuture(futureForConcurrentSearching);
 }
 
 void ControlWidget::onCancelButton(bool /*checked*/)
 {
-    // TODO: implement method
+    toCancel.store(true);
 }
 
 void ControlWidget::onSaveButton(bool /*checked*/)
 {
-    qDebug() << "onSaveButton()";
     QString fileName = QFileDialog::getSaveFileName(this,
             "Save Files", "",
             "Text files (*.txt)");
@@ -108,7 +107,6 @@ void ControlWidget::onSaveButton(bool /*checked*/)
 
 void ControlWidget::handleFinishedSearchingTask()
 {
-    qDebug() << "handleFinishedSearchingTask()";
     if (!futureForConcurrentSearching.isValid()) {
         qDebug() << "future not valid";
         return;
@@ -129,8 +127,8 @@ void ControlWidget::handleFinishedSearchingTask()
     auto rowCount = listModel->rowCount();
     for(int i = 0; i < files.size(); ++i) {
         QModelIndex modelIndex = listModel->index(rowCount - 1);
-        listModel->insertRow(rowCount);                             // TODO: optimize, like listModel->insertRows(rowCount, 1);
-        listModel->setData(modelIndex, files[i], Qt::DisplayRole);  // or using sliding window
+        listModel->insertRow(rowCount);
+        listModel->setData(modelIndex, files[i], Qt::DisplayRole);
 
         filesView->setCurrentIndex(modelIndex);
         ++rowCount;
@@ -141,17 +139,25 @@ void ControlWidget::handleFinishedSearchingTask()
 
 void ControlWidget::handleCanceledSearchingTask()
 {
-    // TODO: implement method
+    futureForConcurrentSearching.waitForFinished();
+    toCancel.store(false);
     enableControls();
 }
 
-
 void ControlWidget::disableControls()
 {
-    // TODO: implement method
+    controlButton->setDisabled(true);
+    saveButton->setDisabled(true);
+    patternToFind->setDisabled(true);
+
+    cancelButton->setEnabled(true);
 }
 
 void ControlWidget::enableControls()
 {
-    // TODO: implement method
+    controlButton->setEnabled(true);
+    saveButton->setEnabled(true);
+    patternToFind->setEnabled(true);
+
+    cancelButton->setDisabled(true);
 }
