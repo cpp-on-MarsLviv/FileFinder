@@ -4,10 +4,11 @@
 #include <QRegExp>
 #include <QDirIterator>
 
-QStringList QtBasedEngine::getFiles(const QString &path, const QString &pattern,  std::atomic_bool &toCancel)
+QSharedPointer<QStringList> QtBasedEngine::getFiles(const QString &path, const QString &pattern, std::atomic_bool &toCancel)
 {
-    QStringList files;
-    QStringList emptyFiles;
+    QSharedPointer<QStringList> files = QSharedPointer<QStringList>::create();
+    QSharedPointer<QStringList> emptyFiles = QSharedPointer<QStringList>::create();
+
     long long counter = 0;
     QFileInfo cleanPath;
     QDirIterator it(path, QDirIterator::Subdirectories);
@@ -18,10 +19,10 @@ QStringList QtBasedEngine::getFiles(const QString &path, const QString &pattern,
             continue;
 
         if (passPattern(pattern, cleanPath.fileName())) {
-            files << cleanPath.absoluteFilePath();
+            *files << cleanPath.absoluteFilePath();
         }
         if (counter % 100000 == 0) {
-            qDebug() << "counter " << counter;
+            qDebug() << "files# " << counter;
             if (toCancel.load())
                 return emptyFiles;
         }

@@ -3,16 +3,13 @@
 #include "Engines/qtbasedengine.h"
 
 #include <QBoxLayout>
-#include <QLabel>
 #include <QPushButton>
-#include <QTextEdit>
 #include <QListView>
 #include <QStringListModel>
+#include <QStringList>
 #include <QLineEdit>
 #include <QFileDialog>
 #include <QMessageBox>
-#include <QStringList>
-#include <QDirIterator>
 
 ControlWidget::ControlWidget(QWidget *parent) :
     QWidget{parent},
@@ -24,7 +21,8 @@ ControlWidget::ControlWidget(QWidget *parent) :
     cancelButton {new QPushButton(Helpers::buttonLabelToCancel, this)},
     filesView {new QListView(this)},
     listModel {new QStringListModel(this)},
-    saveButton {new QPushButton(Helpers::saveButtonLabel, this)}
+    saveButton {new QPushButton(Helpers::saveButtonLabel, this)},
+    obtainedFiles (QSharedPointer<QStringList>::create())
 {
     catalogName->setReadOnly(true);
     mainLayout->addWidget(catalogName);
@@ -38,8 +36,8 @@ ControlWidget::ControlWidget(QWidget *parent) :
     fileNameLayout->setSpacing(15);
     mainLayout->addLayout(fileNameLayout);
 
-    filesToShow << Helpers::defaultInfoInSearchResult;
-    listModel->setStringList(filesToShow);
+    *obtainedFiles << Helpers::defaultInfoInSearchResult;
+    listModel->setStringList(*obtainedFiles);
     filesView->setEditTriggers(QAbstractItemView::NoEditTriggers);
     filesView->setModel(listModel);
 
@@ -97,7 +95,7 @@ void ControlWidget::onSaveButton(bool /*checked*/)
             return;
         }
         QTextStream out(&file);
-        std::for_each(filesToShow.cbegin(), filesToShow.cend(), [&out](const QString string){
+        std::for_each(obtainedFiles->cbegin(), obtainedFiles->cend(), [&out](const QString string){
 
             out << string.toUtf8();
             out << "\n";
@@ -113,9 +111,9 @@ void ControlWidget::handleFinishedSearchingTask()
     }
     auto files = futureForConcurrentSearching.takeResult();
 
-    filesToShow = files;
+    obtainedFiles = files;
 
-    if (files.size() == 0) {
+    if (files->size() == 0) {
         auto rowCount = listModel->rowCount();
         QModelIndex modelIndex = listModel->index(rowCount - 1);
         listModel->insertRow(rowCount);
@@ -125,10 +123,10 @@ void ControlWidget::handleFinishedSearchingTask()
     }
 
     auto rowCount = listModel->rowCount();
-    for(int i = 0; i < files.size(); ++i) {
+    for(int i = 0; i < files->size(); ++i) {
         QModelIndex modelIndex = listModel->index(rowCount - 1);
         listModel->insertRow(rowCount);
-        listModel->setData(modelIndex, files[i], Qt::DisplayRole);
+        listModel->setData(modelIndex, files->at(i), Qt::DisplayRole);
 
         filesView->setCurrentIndex(modelIndex);
         ++rowCount;

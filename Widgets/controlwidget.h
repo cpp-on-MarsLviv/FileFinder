@@ -31,11 +31,11 @@ class ControlWidget : public QWidget
     QPushButton *saveButton  {nullptr};
 
     QString currentCatalog;
-    QStringList filesToShow;
+    QSharedPointer<QStringList> obtainedFiles;
 
     std::atomic_bool toCancel;
-    QFutureWatcher<QStringList> watcherForConcurrentSearching;
-    QFuture<QStringList> futureForConcurrentSearching;
+    QFutureWatcher<QSharedPointer<QStringList>> watcherForConcurrentSearching;
+    QFuture<QSharedPointer<QStringList>> futureForConcurrentSearching;
 
     void disableControls();
     void enableControls();
