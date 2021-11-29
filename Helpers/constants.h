@@ -27,10 +27,13 @@ const QString placeholderFiles = "*.*";
 const QString defaultSearchPuttern = "*.*";
 const QString toolTipForPattern = "use ? for one character\n* for multiple characters";
 
+const int listModelSize = 50;
+
 const QString saveButtonLabel = "Save...";
 const int saveButtonMinWidth = 300;
 
-const QString defaultInfoInSearchResult = "No files";
+const QString noFilesInSearchResult = "No files.";
+const QString foundFilesInSearchResult = "Found % files:";
 
 const int layoutProportions[] = {2, 3};
 

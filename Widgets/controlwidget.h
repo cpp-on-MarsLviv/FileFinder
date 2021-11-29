@@ -18,12 +18,14 @@ class ControlWidget : public QWidget
     Q_OBJECT
 
     QVBoxLayout *mainLayout {nullptr};
-    QHBoxLayout *fileNameLayout {nullptr};
+    QHBoxLayout *controlsLayout {nullptr};
 
     QLineEdit *catalogName  {nullptr};
     QLineEdit *patternToFind  {nullptr};
     QPushButton *controlButton  {nullptr};
     QPushButton *cancelButton  {nullptr};
+
+    QLineEdit *searchResult  {nullptr};
 
     QListView *filesView {nullptr};
     QStringListModel *listModel {nullptr};
@@ -31,6 +33,7 @@ class ControlWidget : public QWidget
     QPushButton *saveButton  {nullptr};
 
     QString currentCatalog;
+    QSharedPointer<QStringList> modelFiles;
     QSharedPointer<QStringList> obtainedFiles;
 
     std::atomic_bool toCancel;

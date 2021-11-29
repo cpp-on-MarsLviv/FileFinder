@@ -14,14 +14,16 @@
 ControlWidget::ControlWidget(QWidget *parent) :
     QWidget{parent},
     mainLayout {new QVBoxLayout(this)},
-    fileNameLayout {new QHBoxLayout(this)},
+    controlsLayout {new QHBoxLayout(this)},
     catalogName {new QLineEdit(Helpers::catalogLabel, this)},
     patternToFind {new QLineEdit(Helpers::defaultSearchPuttern, this)},
     controlButton {new QPushButton(Helpers::buttonLabelToStart, this)},
     cancelButton {new QPushButton(Helpers::buttonLabelToCancel, this)},
+    searchResult {new QLineEdit(Helpers::noFilesInSearchResult, this)},
     filesView {new QListView(this)},
     listModel {new QStringListModel(this)},
     saveButton {new QPushButton(Helpers::saveButtonLabel, this)},
+    modelFiles (QSharedPointer<QStringList>::create()),
     obtainedFiles (QSharedPointer<QStringList>::create())
 {
     catalogName->setReadOnly(true);
@@ -30,14 +32,19 @@ ControlWidget::ControlWidget(QWidget *parent) :
     patternToFind->setPlaceholderText(Helpers::placeholderFiles);
     patternToFind->setToolTip(Helpers::toolTipForPattern);
 
-    fileNameLayout->addWidget(patternToFind);
-    fileNameLayout->addWidget(controlButton);
-    fileNameLayout->addWidget(cancelButton);
-    fileNameLayout->setSpacing(15);
-    mainLayout->addLayout(fileNameLayout);
+    controlsLayout->addWidget(patternToFind);
+    controlsLayout->addWidget(controlButton);
+    controlsLayout->addWidget(cancelButton);
+    controlsLayout->setSpacing(15);
+    mainLayout->addLayout(controlsLayout);
 
-    *obtainedFiles << Helpers::defaultInfoInSearchResult;
-    listModel->setStringList(*obtainedFiles);
+    searchResult->setReadOnly(true);
+    mainLayout->addWidget(searchResult);
+
+    for (int i = 0; i < Helpers::listModelSize; ++i)
+        *modelFiles << QString::number(i);
+
+    listModel->setStringList(*modelFiles);
     filesView->setEditTriggers(QAbstractItemView::NoEditTriggers);
     filesView->setModel(listModel);
 
@@ -63,10 +70,12 @@ void ControlWidget::onStartButton(bool /*checked*/)
     disableControls();
     toCancel.store(false);
 
-    auto rowCountClean = listModel->rowCount();
-    if (rowCountClean > 1) {
-        listModel->removeRows(1, rowCountClean - 1);
-    }
+    // clear Model
+    modelFiles->clear();
+    for (int i = 0; i < modelFiles->size(); ++i)
+        *modelFiles << QString::number(i + 100);
+
+    emit listModel->dataChanged(listModel->index(0, 0), listModel->index(listModel->rowCount() - 1, 0), {Qt::DisplayRole});
 
     connect(&watcherForConcurrentSearching, &QFutureWatcher<QStringList>::finished, this, &ControlWidget::handleFinishedSearchingTask);
     connect(&watcherForConcurrentSearching, &QFutureWatcher<QStringList>::canceled, this, &ControlWidget::handleCanceledSearchingTask);
@@ -109,28 +118,25 @@ void ControlWidget::handleFinishedSearchingTask()
         qDebug() << "future not valid";
         return;
     }
-    auto files = futureForConcurrentSearching.takeResult();
+    obtainedFiles = futureForConcurrentSearching.takeResult();
 
-    obtainedFiles = files;
+    if (obtainedFiles->size() == 0) {
+        searchResult->setText(Helpers::noFilesInSearchResult);
+    } else if (obtainedFiles->size() <= Helpers::listModelSize) {
 
-    if (files->size() == 0) {
-        auto rowCount = listModel->rowCount();
-        QModelIndex modelIndex = listModel->index(rowCount - 1);
-        listModel->insertRow(rowCount);
-        listModel->setData(modelIndex, Helpers::defaultInfoInSearchResult, Qt::DisplayRole);
-
-        filesView->setCurrentIndex(modelIndex);
+    } else {
+        // apply slicing window
     }
 
-    auto rowCount = listModel->rowCount();
-    for(int i = 0; i < files->size(); ++i) {
-        QModelIndex modelIndex = listModel->index(rowCount - 1);
-        listModel->insertRow(rowCount);
-        listModel->setData(modelIndex, files->at(i), Qt::DisplayRole);
+//    auto rowCount = listModel->rowCount();
+//    for(int i = 0; i < obtainedFiles->size(); ++i) {
+//        QModelIndex modelIndex = listModel->index(rowCount - 1);
+//        listModel->insertRow(rowCount);
+//        listModel->setData(modelIndex, obtainedFiles->at(i), Qt::DisplayRole);
 
-        filesView->setCurrentIndex(modelIndex);
-        ++rowCount;
-    }
+//        filesView->setCurrentIndex(modelIndex);
+//        ++rowCount;
+//    }
 
     enableControls();
 }
