@@ -22,7 +22,7 @@ QSharedPointer<QStringList> QtBasedEngine::getFiles(const QString &path, const Q
             *files << cleanPath.absoluteFilePath();
         }
         if (counter % 100000 == 0) {
-            qDebug() << "files# " << counter;
+            qDebug() << "QtBasedEngine found files# " << counter;
             if (toCancel.load())
                 return emptyFiles;
         }

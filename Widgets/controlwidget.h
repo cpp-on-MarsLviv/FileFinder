@@ -33,10 +33,28 @@ class ControlWidget : public QWidget
     QPushButton *saveButton  {nullptr};
 
     QString currentCatalog;
-    QSharedPointer<QStringList> modelFiles;
-    QSharedPointer<QStringList> obtainedFiles;
 
-    std::atomic_bool toCancel;
+    /**
+     * @brief obtainedFiles conatain all found files
+     */
+    QSharedPointer<QStringList> obtainedFiles;
+    /**
+     * @brief modelFiles conatain just small portion (equal to Helpers::listModelSize constant) of obtained files.
+     * Template known as sliding window.
+     */
+    QSharedPointer<QStringList> modelFiles;
+
+    QPair<QList<QString>::const_iterator, QList<QString>::const_iterator> slidingWindowLimits;
+                                                // TODO: create SlidingStringListModel : public QStringListModel
+                                               // with built-in sliding window feature
+
+    /**
+     * @brief wheelEvent
+     * Moving sliding window (modelFiles) in bigger bunch (obtainedFiles).
+     */
+    void wheelEvent(QWheelEvent *);
+
+    std::atomic_bool toCancelTask;
     QFutureWatcher<QSharedPointer<QStringList>> watcherForConcurrentSearching;
     QFuture<QSharedPointer<QStringList>> futureForConcurrentSearching;
 
@@ -48,6 +66,8 @@ class ControlWidget : public QWidget
     void onSaveButton(bool checked);
     void handleFinishedSearchingTask();
     void handleCanceledSearchingTask();
+
+
 public:
     explicit ControlWidget(QWidget *parent = nullptr);
 

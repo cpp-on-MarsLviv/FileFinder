@@ -33,7 +33,7 @@ const QString saveButtonLabel = "Save...";
 const int saveButtonMinWidth = 300;
 
 const QString noFilesInSearchResult = "No files.";
-const QString foundFilesInSearchResult = "Found % files:";
+const QString foundFilesInSearchResult = "Found %1 file(s):";
 
 const int layoutProportions[] = {2, 3};
 
