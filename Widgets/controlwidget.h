@@ -67,7 +67,7 @@ class ControlWidget : public QWidget
     void handleFinishedSearchingTask();
     void handleCanceledSearchingTask();
 
-
+    void keyPressEvent(QKeyEvent *event);
 public:
     explicit ControlWidget(QWidget *parent = nullptr);
 

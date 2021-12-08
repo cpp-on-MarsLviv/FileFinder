@@ -12,7 +12,7 @@ using std::vector;
 namespace Helpers {
 
 // application
-const QString appName = "File Finder v 0.1";
+const QString appName = "File Finder v 1.0";
 const int appWidthDefault = 1300;
 const int appHeightDefault = 800;
 
@@ -34,6 +34,7 @@ const int saveButtonMinWidth = 300;
 
 const QString noFilesInSearchResult = "No files.";
 const QString foundFilesInSearchResult = "Found %1 file(s):";
+const QString searchingInSearchResult = "Searching...";
 
 const int layoutProportions[] = {2, 3};
 

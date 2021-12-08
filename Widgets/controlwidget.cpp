@@ -71,9 +71,9 @@ void ControlWidget::onDirectoryChanged(const QString newCatalog)
 void ControlWidget::onStartButton(bool /*checked*/)
 {
     disableControls();
+    searchResult->setText(Helpers::searchingInSearchResult);
     toCancelTask.store(false);
 
-    // clean Model
     modelFiles->clear();
     for (int i = 0; i < modelFiles->size(); ++i) {
         *modelFiles << QString::number(i + 100); // TODO: filling with numbers for debub purpose - remove it end uncomment next row
@@ -181,6 +181,20 @@ void ControlWidget::handleCanceledSearchingTask()
     enableControls();
 }
 
+void ControlWidget::keyPressEvent(QKeyEvent *event)
+{
+    if(event->key() != Qt::Key_Enter)
+        return;
+
+    if (this->focusWidget() == controlButton) {
+        onStartButton(true);
+    } else if (this->focusWidget() == cancelButton) {
+        onCancelButton(true);
+    } else if (this->focusWidget() == saveButton) {
+        onSaveButton(true);
+    }
+}
+
 void ControlWidget::wheelEvent(QWheelEvent *event)
 {
     if (obtainedFiles->size() <= Helpers::listModelSize) {
@@ -190,31 +204,25 @@ void ControlWidget::wheelEvent(QWheelEvent *event)
 
     QPoint numDegrees = event->angleDelta();
     auto delta = numDegrees.ry();
-    qDebug() << "delta:" << delta;
     int filesToScroll = std::abs(-delta / 30);
-    qDebug() << "filesToScroll:" << filesToScroll;
 
-    if (delta < 0) {
-        qDebug() << "Scroll down";
+    if (delta < 0) {    // Scroll down
         auto nextSecond = std::min(obtainedFiles->cend(), slidingWindowLimits.second + filesToScroll);
         slidingWindowLimits.second = nextSecond;
         slidingWindowLimits.first = slidingWindowLimits.second - Helpers::listModelSize;
 
         modelFiles = QSharedPointer<QStringList>::create(slidingWindowLimits.first, slidingWindowLimits.second);
         listModel->setStringList(*modelFiles);
+        // TODO: same as prev.
+    } else {        // Scroll up
+        auto nextFirst = std::max(obtainedFiles->cbegin(), slidingWindowLimits.first - filesToScroll);
+        slidingWindowLimits.first = nextFirst;
+        slidingWindowLimits.second = slidingWindowLimits.first + Helpers::listModelSize;
 
-    } else {
-        qDebug() << "Scroll up";
-
-
+        modelFiles = QSharedPointer<QStringList>::create(slidingWindowLimits.first, slidingWindowLimits.second);
+        listModel->setStringList(*modelFiles);
+        // TODO: same as prev.
     }
-//    slidingWindowLimits.first = obtainedFiles->cbegin();
-//    slidingWindowLimits.second = slidingWindowLimits.first + Helpers::listModelSize;
-//    modelFiles = QSharedPointer<QStringList>::create(slidingWindowLimits.first, slidingWindowLimits.second);
-
-//    listModel->setStringList(*modelFiles);
-    // TODO: same as prev.
-
     event->accept();
 }
 
