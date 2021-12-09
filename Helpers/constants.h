@@ -5,7 +5,6 @@
 
 #include <QString>
 #include <QFont>
-#include <QTranslator>
 
 using std::vector;
 

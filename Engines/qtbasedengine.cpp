@@ -33,7 +33,7 @@ QSharedPointer<QStringList> QtBasedEngine::getFiles(const QString &path, const Q
 }
 
 bool QtBasedEngine::passPattern(const QString &pattern, const QString &file)
-{
+{   // TODO: optimize it: creation and setPatternSyntax just once. Good way is to avoid static approach.
     QRegExp rx(pattern);
     rx.setPatternSyntax(QRegExp::Wildcard);
     return rx.exactMatch(file);

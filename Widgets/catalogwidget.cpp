@@ -34,10 +34,7 @@ CatalogWidget::CatalogWidget(QWidget *parent) :
 
 void CatalogWidget::onFileSystemViewClicked(const QModelIndex &index)
 {
-    qDebug() << "onFileSystemViewClicked";
-
     QString path = fileSystemModel->fileInfo(index).absoluteFilePath();
-    qDebug() << "mPath" << path;
     emit directryChanged(path);
 }
 

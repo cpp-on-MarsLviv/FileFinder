@@ -28,7 +28,7 @@ class ControlWidget : public QWidget
     QLineEdit *searchResult  {nullptr};
 
     QListView *filesView {nullptr};
-    QStringListModel *listModel {nullptr};
+    QStringListModel *filesModel {nullptr};
 
     QPushButton *saveButton  {nullptr};
 

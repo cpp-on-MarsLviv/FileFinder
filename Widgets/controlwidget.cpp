@@ -22,7 +22,7 @@ ControlWidget::ControlWidget(QWidget *parent) :
     cancelButton {new QPushButton(Helpers::buttonLabelToCancel, this)},
     searchResult {new QLineEdit(Helpers::noFilesInSearchResult, this)},
     filesView {new QListView(this)},
-    listModel {new QStringListModel(this)},
+    filesModel {new QStringListModel(this)},
     saveButton {new QPushButton(Helpers::saveButtonLabel, this)},
     obtainedFiles (QSharedPointer<QStringList>::create()),
     modelFiles (QSharedPointer<QStringList>::create())
@@ -43,13 +43,13 @@ ControlWidget::ControlWidget(QWidget *parent) :
     mainLayout->addWidget(searchResult);
 
     for (int i = 0; i < Helpers::listModelSize; ++i) {
-        *modelFiles << QString::number(i);// TODO: filling with numbers for debub purpose - remove it end uncomment next row
-        //*modelFiles << QString("");
+        //*modelFiles << QString::number(i);// for debugging
+        *modelFiles << QString("");
     }
 
-    listModel->setStringList(*modelFiles);
+    filesModel->setStringList(*modelFiles);
     filesView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    filesView->setModel(listModel);
+    filesView->setModel(filesModel);
 
     mainLayout->addWidget(filesView);
     saveButton->setMinimumWidth(Helpers::saveButtonMinWidth);
@@ -75,14 +75,14 @@ void ControlWidget::onStartButton(bool /*checked*/)
     toCancelTask.store(false);
 
     modelFiles->clear();
-    for (int i = 0; i < modelFiles->size(); ++i) {
-        *modelFiles << QString::number(i + 100); // TODO: filling with numbers for debub purpose - remove it end uncomment next row
-        //*modelFiles << QString("");
+    for (int i = 0; i < Helpers::listModelSize; ++i) {
+        //*modelFiles << QString::number(i + 100); // for debugging
+        *modelFiles << QString("");
     }
-    listModel->setStringList(*modelFiles);
+    filesModel->setStringList(*modelFiles);
     // TODO: figure out why previous row works and one of next dont.
-//    emit listModel->dataChanged(listModel->index(0, 0), listModel->index(listModel->rowCount() - 1, 0), {Qt::DisplayRole});
-//    emit listModel->dataChanged(listModel->index(0, 0), listModel->index(modelFiles->size() - 1, 0), {Qt::DisplayRole});
+//    emit filesModel->dataChanged(filesModel->index(0, 0), filesModel->index(filesModel->rowCount() - 1, 0), {Qt::DisplayRole});
+//    emit filesModel->dataChanged(filesModel->index(0, 0), filesModel->index(modelFiles->size() - 1, 0), {Qt::DisplayRole});
 
     connect(&watcherForConcurrentSearching, &QFutureWatcher<QStringList>::finished, this, &ControlWidget::handleFinishedSearchingTask);
     connect(&watcherForConcurrentSearching, &QFutureWatcher<QStringList>::canceled, this, &ControlWidget::handleCanceledSearchingTask);
@@ -128,48 +128,25 @@ void ControlWidget::handleFinishedSearchingTask()
     obtainedFiles = futureForConcurrentSearching.takeResult();
 
     if (obtainedFiles->size() == 0) {
-        qDebug() << "case 1; obtainedFiles->size() == 0";
         searchResult->setText(Helpers::noFilesInSearchResult);
     } else if (obtainedFiles->size() <= Helpers::listModelSize) {
-        qDebug() << "case 2; obtainedFiles->size():" << obtainedFiles->size();
         searchResult->setText(Helpers::foundFilesInSearchResult.arg(obtainedFiles->size()));
         modelFiles = obtainedFiles;
 
-        listModel->setStringList(*modelFiles);
+        filesModel->setStringList(*modelFiles);
         // TODO: figure out why previous row works and one of next dont.
-    //    emit listModel->dataChanged(listModel->index(0, 0), listModel->index(listModel->rowCount() - 1, 0), {Qt::DisplayRole});
-    //    emit listModel->dataChanged(listModel->index(0, 0), listModel->index(modelFiles->size() - 1, 0), {Qt::DisplayRole});
-
-//        QModelIndex modelIndex = listModel->index(0);
-//        emit listModel->dataChanged(modelIndex, modelIndex, {Qt::DisplayRole});
-//        modelIndex = listModel->index(1);
-//        emit listModel->dataChanged(modelIndex, modelIndex, {Qt::DisplayRole});
-//        modelIndex = listModel->index(2);
-//        emit listModel->dataChanged(modelIndex, modelIndex, {Qt::DisplayRole});
-        //emit listModel->dataChanged(listModel->index(0, 0), listModel->index(modelFiles->size() - 1, 0), {Qt::DisplayRole});
-        //      QModelIndex modelIndex = createIndex(row, col);
-        //      emit dataChanged(modelIndex, modelIndex, {Qt::BackgroundRole});
+    //    emit filesModel->dataChanged(filesModel->index(0, 0), filesModel->index(filesModel->rowCount() - 1, 0), {Qt::DisplayRole});
+    //    emit filesModel->dataChanged(filesModel->index(0, 0), filesModel->index(modelFiles->size() - 1, 0), {Qt::DisplayRole});
     } else {                        // apply sliding window
-        qDebug() << "case 3; obtainedFiles->size():" << obtainedFiles->size();
         searchResult->setText(Helpers::foundFilesInSearchResult.arg(obtainedFiles->size()));
 
         slidingWindowLimits.first = obtainedFiles->cbegin();
         slidingWindowLimits.second = slidingWindowLimits.first + Helpers::listModelSize;
         modelFiles = QSharedPointer<QStringList>::create(slidingWindowLimits.first, slidingWindowLimits.second);
 
-        listModel->setStringList(*modelFiles);
+        filesModel->setStringList(*modelFiles);
         // TODO: same as prev. case
     }
-
-//    auto rowCount = listModel->rowCount();
-//    for(int i = 0; i < obtainedFiles->size(); ++i) {
-//        QModelIndex modelIndex = listModel->index(rowCount - 1);
-//        listModel->insertRow(rowCount);
-//        listModel->setData(modelIndex, obtainedFiles->at(i), Qt::DisplayRole);
-
-//        filesView->setCurrentIndex(modelIndex);
-//        ++rowCount;
-//    }
 
     enableControls();
 }
@@ -212,7 +189,7 @@ void ControlWidget::wheelEvent(QWheelEvent *event)
         slidingWindowLimits.first = slidingWindowLimits.second - Helpers::listModelSize;
 
         modelFiles = QSharedPointer<QStringList>::create(slidingWindowLimits.first, slidingWindowLimits.second);
-        listModel->setStringList(*modelFiles);
+        filesModel->setStringList(*modelFiles);
         // TODO: same as prev.
     } else {        // Scroll up
         auto nextFirst = std::max(obtainedFiles->cbegin(), slidingWindowLimits.first - filesToScroll);
@@ -220,7 +197,7 @@ void ControlWidget::wheelEvent(QWheelEvent *event)
         slidingWindowLimits.second = slidingWindowLimits.first + Helpers::listModelSize;
 
         modelFiles = QSharedPointer<QStringList>::create(slidingWindowLimits.first, slidingWindowLimits.second);
-        listModel->setStringList(*modelFiles);
+        filesModel->setStringList(*modelFiles);
         // TODO: same as prev.
     }
     event->accept();
